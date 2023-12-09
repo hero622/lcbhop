@@ -36,6 +36,15 @@ namespace lcbhop {
 
             __instance.Crouch( !__instance.isCrouching );
 
+            // Player height fix for non-host
+            if ( __instance.isCrouching ) {
+                __instance.thisController.center = new Vector3( __instance.thisController.center.x, 0.72f, __instance.thisController.center.z );
+                __instance.thisController.height = 1.5f;
+            } else {
+                __instance.thisController.center = new Vector3( __instance.thisController.center.x, 1.28f, __instance.thisController.center.z );
+                __instance.thisController.height = 2.5f;
+            }
+
             return false;
         }
     }
