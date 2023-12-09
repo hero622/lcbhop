@@ -59,7 +59,9 @@ public class CPMPlayer : MonoBehaviour {
             return;
         }
 
-        // Allow crouching while mid air, also completely disables fall damage
+        // Allow crouching while mid air
+        player.fallValue = 0.0f;
+        // Disables fall damage
         player.fallValueUncapped = 0.0f;
 
         /* Movement, here's the important part */
