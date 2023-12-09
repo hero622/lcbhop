@@ -53,10 +53,14 @@ public class CPMPlayer : MonoBehaviour {
     }
 
     private void Update( ) {
+        // Don't patch movement on ladders
         if ( player.isClimbingLadder ) {
             Plugin.patchMove = false;
             return;
         }
+
+        // Allow crouching while mid air, hopefully doesn't cause any side effects
+        player.fallValue = 0.0f;
 
         /* Movement, here's the important part */
         QueueJump( );

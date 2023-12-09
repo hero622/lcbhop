@@ -1,16 +1,42 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 
+using GameNetcodeStuff;
+
 using HarmonyLib;
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace lcbhop {
     [HarmonyPatch( typeof( CharacterController ), "Move" )]
-    class CharacterController_Patch {
+    class Move_Patch {
         [HarmonyPrefix]
         internal static bool Prefix( ref Vector3 motion ) {
             return !Plugin.patchMove;
+        }
+    }
+
+    [HarmonyPatch( typeof( PlayerControllerB ), "Crouch_performed" )]
+    class Crouch_performed_Patch {
+        [HarmonyPrefix]
+        internal static bool Prefix( PlayerControllerB __instance, ref InputAction.CallbackContext context ) {
+            if ( !context.performed ) {
+                return false;
+            }
+            if ( __instance.quickMenuManager.isMenuOpen ) {
+                return false;
+            }
+            if ( ( !__instance.IsOwner || !__instance.isPlayerControlled || ( __instance.IsServer && !__instance.isHostPlayerObject ) ) && !__instance.isTestingPlayer ) {
+                return false;
+            }
+            if ( __instance.inSpecialInteractAnimation || __instance.isTypingChat ) {
+                return false;
+            }
+
+            __instance.Crouch( !__instance.isCrouching );
+
+            return false;
         }
     }
 
