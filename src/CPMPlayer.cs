@@ -95,6 +95,11 @@ public class CPMPlayer : MonoBehaviour {
     }
 
     private void Update( ) {
+        if ( player.isClimbingLadder ) {
+            Plugin.patchMove = false;
+            return;
+        }
+
         // Do FPS calculation
         frameCount++;
         dt += Time.deltaTime;
