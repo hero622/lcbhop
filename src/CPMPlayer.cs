@@ -1,30 +1,4 @@
-/*
-* - Edited by PrzemyslawNowaczyk (11.10.17)
-*   -----------------------------
-*   Deleting unused variables
-*   Changing obsolete methods
-*   Changing used input methods for consistency
-*   -----------------------------
-*
-* - Edited by NovaSurfer (31.01.17).
-*   -----------------------------
-*   Rewriting from JS to C#
-*   Deleting "Spawn" and "Explode" methods, deleting unused varibles
-*   -----------------------------
-* Just some side notes here.
-*
-* - Should keep in mind that idTech's cartisian plane is different to Unity's:
-*    Z axis in idTech is "up/down" but in Unity Z is the local equivalent to
-*    "forward/backward" and Y in Unity is considered "up/down".
-*
-* - Code's mostly ported on a 1 to 1 basis, so some naming convensions are a
-*   bit fucked up right now.
-*
-* - UPS is measured in Unity units, the idTech units DO NOT scale right now.
-*
-* - Default values are accurate and emulates Quake 3's feel with CPM(A) physics.
-*
-*/
+// https://github.com/WiggleWizard/quake3-movement-unity3d/blob/master/CPMPlayer.cs
 
 using System.Collections;
 using System.Collections.Generic;
@@ -60,28 +34,12 @@ public class CPMPlayer : MonoBehaviour {
     public float jumpSpeed = 8.0f;                // The speed at which the character's up axis gains when hitting jump
     public bool holdJumpToBhop = true;            // When enabled allows player to just hold jump button to keep on bhopping perfectly. Beware: smells like casual.
 
-    /*print() style */
-    public GUIStyle style;
-
-    /*FPS Stuff */
-    public float fpsDisplayRate = 4.0f; // 4 updates per sec
-
-    private int frameCount = 0;
-    private float dt = 0.0f;
-    private float fps = 0.0f;
-
     public PlayerControllerB player;
     private CharacterController _controller;
 
-    // Camera rotations
-    private float rotX = 0.0f;
-    private float rotY = 0.0f;
-
     private Vector3 moveDirectionNorm = Vector3.zero;
     private Vector3 playerVelocity = Vector3.zero;
-    private float playerTopVelocity = 0.0f;
 
-    // Q3: players can queue the next jump just before he hits the ground
     private bool wishJump = false;
 
     // Used to display real time fricton values
@@ -100,15 +58,6 @@ public class CPMPlayer : MonoBehaviour {
             return;
         }
 
-        // Do FPS calculation
-        frameCount++;
-        dt += Time.deltaTime;
-        if ( dt > 1.0 / fpsDisplayRate ) {
-            fps = Mathf.Round( frameCount / dt );
-            frameCount = 0;
-            dt -= 1.0f / fpsDisplayRate;
-        }
-
         /* Movement, here's the important part */
         QueueJump( );
         if ( _controller.isGrounded )
@@ -120,12 +69,6 @@ public class CPMPlayer : MonoBehaviour {
         Plugin.patchMove = false; // Disable the Move Patch
         _controller.Move( playerVelocity * Time.deltaTime );
         Plugin.patchMove = true; // Reenable the Move Patch
-
-        /* Calculate top velocity */
-        Vector3 udp = playerVelocity;
-        udp.y = 0.0f;
-        if ( udp.magnitude > playerTopVelocity )
-            playerTopVelocity = udp.magnitude;
     }
 
     /*******************************************************************************************************\
