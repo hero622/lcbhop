@@ -1,4 +1,4 @@
 # lcbhop
 Bhop mod featuring *real* **Bhop** movement in Lethal Company.
 
-Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard/quake3-movement-unity3d/tree/master)
+Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard/quake3-movement-unity3d/tree/master), modified to match [halflife](https://github.com/ValveSoftware/halflife/blob/master/pm_shared/pm_shared.c)

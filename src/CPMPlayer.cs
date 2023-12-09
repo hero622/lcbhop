@@ -1,4 +1,6 @@
-// https://github.com/WiggleWizard/quake3-movement-unity3d/blob/master/CPMPlayer.cs
+/* Based on https://github.com/WiggleWizard/quake3-movement-unity3d/blob/master/CPMPlayer.cs
+ * Modified to match https://github.com/ValveSoftware/halflife/blob/master/pm_shared/pm_shared.c
+ */
 
 using System.Collections;
 using System.Collections.Generic;
@@ -20,30 +22,21 @@ public class CPMPlayer : MonoBehaviour {
     /*Frame occuring factors*/
     public float gravity = 20.0f;
 
-    public float friction = 6; //Ground friction
+    public float friction = 4.0f;                 //Ground friction
 
     /* Movement stuff */
-    public float moveSpeed = 7.0f;                // Ground move speed
-    public float runAcceleration = 14.0f;         // Ground accel
-    public float runDeacceleration = 10.0f;       // Deacceleration that occurs when running on the ground
-    public float airAcceleration = 2.0f;          // Air accel
-    public float airDecceleration = 2.0f;         // Deacceleration experienced when ooposite strafing
-    public float airControl = 0.3f;               // How precise air control is
-    public float sideStrafeAcceleration = 50.0f;  // How fast acceleration occurs to get up to sideStrafeSpeed when
-    public float sideStrafeSpeed = 1.0f;          // What the max speed to generate when side strafing
-    public float jumpSpeed = 8.0f;                // The speed at which the character's up axis gains when hitting jump
+    public float maxspeed = 8.0f;                 // Max speed
+    public float accelerate = 10.0f;              // Ground accel
+    public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
+    public float airaccelerate = 100.0f;          // Air accel
     public bool holdJumpToBhop = true;            // When enabled allows player to just hold jump button to keep on bhopping perfectly. Beware: smells like casual.
 
     public PlayerControllerB player;
     private CharacterController _controller;
 
-    private Vector3 moveDirectionNorm = Vector3.zero;
     private Vector3 playerVelocity = Vector3.zero;
 
     private bool wishJump = false;
-
-    // Used to display real time fricton values
-    private float playerFriction = 0.0f;
 
     // Player commands, stores wish commands that the player asks for (Forward, back, jump, etc)
     private Cmd _cmd;
@@ -67,12 +60,16 @@ public class CPMPlayer : MonoBehaviour {
         }
 
         // Allow crouching while mid air, hopefully doesn't cause any side effects
-        player.fallValue = 0.0f;
+        player.fallValueUncapped = 0.0f;
 
         /* Movement, here's the important part */
         QueueJump( );
+
         if ( _controller.isGrounded )
-            GroundMove( );
+            Friction( );
+
+        if ( _controller.isGrounded )
+            WalkMove( );
         else if ( !_controller.isGrounded )
             AirMove( );
 
@@ -108,111 +105,61 @@ public class CPMPlayer : MonoBehaviour {
      * Execs when the player is in the air
     */
     private void AirMove( ) {
+        Vector3 wishvel;
         Vector3 wishdir;
-        float wishvel = airAcceleration;
-        float accel;
+        float wishspeed;
 
         SetMovementDir( );
 
-        wishdir = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
-        wishdir = transform.TransformDirection( wishdir );
+        wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
+        wishvel = transform.TransformDirection( wishvel );
 
-        float wishspeed = wishdir.magnitude;
-        wishspeed *= moveSpeed;
+        wishdir = wishvel;
 
+        wishspeed = wishdir.magnitude;
         wishdir.Normalize( );
-        moveDirectionNorm = wishdir;
 
-        // CPM: Aircontrol
-        float wishspeed2 = wishspeed;
-        if ( Vector3.Dot( playerVelocity, wishdir ) < 0 )
-            accel = airDecceleration;
-        else
-            accel = airAcceleration;
-        // If the player is ONLY strafing left or right
-        if ( _cmd.forwardMove == 0 && _cmd.rightMove != 0 ) {
-            if ( wishspeed > sideStrafeSpeed )
-                wishspeed = sideStrafeSpeed;
-            accel = sideStrafeAcceleration;
+        if ( wishspeed > maxspeed ) {
+            wishvel *= maxspeed / wishspeed;
+            wishspeed = maxspeed;
         }
 
-        Accelerate( wishdir, wishspeed, accel );
-        if ( airControl > 0 )
-            AirControl( wishdir, wishspeed2 );
-        // !CPM: Aircontrol
+        AirAccelerate( wishdir, wishspeed, airaccelerate );
 
         // Apply gravity
         playerVelocity.y -= gravity * Time.deltaTime;
     }
 
     /**
-     * Air control occurs when the player is in the air, it allows
-     * players to move side to side much faster rather than being
-     * 'sluggish' when it comes to cornering.
-     */
-    private void AirControl( Vector3 wishdir, float wishspeed ) {
-        float zspeed;
-        float speed;
-        float dot;
-        float k;
-
-        // Can't control movement if not moving forward or backward
-        if ( Mathf.Abs( _cmd.forwardMove ) < 0.001 || Mathf.Abs( wishspeed ) < 0.001 )
-            return;
-        zspeed = playerVelocity.y;
-        playerVelocity.y = 0;
-        /* Next two lines are equivalent to idTech's VectorNormalize() */
-        speed = playerVelocity.magnitude;
-        playerVelocity.Normalize( );
-
-        dot = Vector3.Dot( playerVelocity, wishdir );
-        k = 32;
-        k *= airControl * dot * dot * Time.deltaTime;
-
-        // Change direction while slowing down
-        if ( dot > 0 ) {
-            playerVelocity.x = playerVelocity.x * speed + wishdir.x * k;
-            playerVelocity.y = playerVelocity.y * speed + wishdir.y * k;
-            playerVelocity.z = playerVelocity.z * speed + wishdir.z * k;
-
-            playerVelocity.Normalize( );
-            moveDirectionNorm = playerVelocity;
-        }
-
-        playerVelocity.x *= speed;
-        playerVelocity.y = zspeed; // Note this line
-        playerVelocity.z *= speed;
-    }
-
-    /**
      * Called every frame when the engine detects that the player is on the ground
      */
-    private void GroundMove( ) {
+    private void WalkMove( ) {
+        Vector3 wishvel;
         Vector3 wishdir;
-
-        // Do not apply friction if the player is queueing up the next jump
-        if ( !wishJump )
-            ApplyFriction( 1.0f );
-        else
-            ApplyFriction( 0 );
+        float wishspeed;
 
         SetMovementDir( );
 
-        wishdir = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
-        wishdir = transform.TransformDirection( wishdir );
+        wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
+        wishvel = transform.TransformDirection( wishvel );
+
+        wishdir = wishvel;
+
+        wishspeed = wishdir.magnitude * maxspeed;
         wishdir.Normalize( );
-        moveDirectionNorm = wishdir;
 
-        var wishspeed = wishdir.magnitude;
-        wishspeed *= moveSpeed;
+        if ( wishspeed > maxspeed ) {
+            wishvel *= maxspeed / wishspeed;
+            wishspeed = maxspeed;
+        }
 
-        Accelerate( wishdir, wishspeed, runAcceleration );
+        Accelerate( wishdir, wishspeed, accelerate );
 
         // Reset the gravity velocity
         playerVelocity.y = -gravity * Time.deltaTime;
 
         if ( wishJump ) {
-            playerVelocity.y = jumpSpeed;
+            playerVelocity.y = 8.0f;
             wishJump = false;
         }
     }
@@ -220,8 +167,8 @@ public class CPMPlayer : MonoBehaviour {
     /**
      * Applies friction to the player, called in both the air and on the ground
      */
-    private void ApplyFriction( float t ) {
-        Vector3 vec = playerVelocity; // Equivalent to: VectorCopy();
+    private void Friction( ) {
+        Vector3 vec = playerVelocity;
         float speed;
         float newspeed;
         float control;
@@ -229,20 +176,23 @@ public class CPMPlayer : MonoBehaviour {
 
         vec.y = 0.0f;
         speed = vec.magnitude;
+
+        if ( speed < 0.1f )
+            return;
+
         drop = 0.0f;
 
         /* Only if the player is on the ground then apply friction */
         if ( _controller.isGrounded ) {
-            control = speed < runDeacceleration ? runDeacceleration : speed;
-            drop = control * friction * Time.deltaTime * t;
+            control = ( speed < stopspeed ) ? stopspeed : speed;
+            drop += control * friction * Time.deltaTime;
         }
 
         newspeed = speed - drop;
-        playerFriction = newspeed;
         if ( newspeed < 0 )
             newspeed = 0;
-        if ( speed > 0 )
-            newspeed /= speed;
+
+        newspeed /= speed;
 
         playerVelocity.x *= newspeed;
         playerVelocity.z *= newspeed;
@@ -254,10 +204,39 @@ public class CPMPlayer : MonoBehaviour {
         float currentspeed;
 
         currentspeed = Vector3.Dot( playerVelocity, wishdir );
+
         addspeed = wishspeed - currentspeed;
+
         if ( addspeed <= 0 )
             return;
+
         accelspeed = accel * Time.deltaTime * wishspeed;
+
+        if ( accelspeed > addspeed )
+            accelspeed = addspeed;
+
+        playerVelocity.x += accelspeed * wishdir.x;
+        playerVelocity.z += accelspeed * wishdir.z;
+    }
+
+    private void AirAccelerate( Vector3 wishdir, float wishspeed, float accel ) {
+        float addspeed;
+        float accelspeed;
+        float currentspeed;
+        float wishspd = wishspeed;
+
+        if ( wishspd > 30 )
+            wishspd = 30;
+
+        currentspeed = Vector3.Dot( playerVelocity, wishdir );
+
+        addspeed = wishspd - currentspeed;
+
+        if ( addspeed <= 0 )
+            return;
+
+        accelspeed = accel * wishspeed * Time.deltaTime;
+
         if ( accelspeed > addspeed )
             accelspeed = addspeed;
 
