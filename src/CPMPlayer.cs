@@ -53,6 +53,13 @@ public class CPMPlayer : MonoBehaviour {
     }
 
     private void Update( ) {
+        if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
+            return;
+        }
+        if ( player.quickMenuManager.isMenuOpen || player.inSpecialInteractAnimation || player.isTypingChat ) {
+            return;
+        }
+
         // Don't patch movement on ladders
         if ( player.isClimbingLadder ) {
             Plugin.patchMove = false;
