@@ -40,6 +40,16 @@ namespace lcbhop {
         }
     }
 
+    public class ComponentAdder : MonoBehaviour {
+        void Update( ) {
+            foreach ( PlayerControllerB playerControllerB in UnityEngine.Object.FindObjectsOfType<PlayerControllerB>( ) ) {
+                if ( playerControllerB != null && playerControllerB.gameObject.GetComponentInChildren<CPMPlayer>( ) == null && playerControllerB.IsOwner && playerControllerB.isPlayerControlled ) {
+                    playerControllerB.gameObject.AddComponent<CPMPlayer>( ).player = playerControllerB;
+                }
+            }
+        }
+    }
+
     [BepInPlugin( MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION )]
     public class Plugin : BaseUnityPlugin {
         public static ManualLogSource logger;
