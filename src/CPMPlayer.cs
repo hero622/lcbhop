@@ -2,14 +2,14 @@
  * Modified to match https://github.com/ValveSoftware/halflife/blob/master/pm_shared/pm_shared.c
  */
 
-using System.Collections;
-using System.Collections.Generic;
+using System.Reflection;
 
 using GameNetcodeStuff;
 
 using lcbhop;
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 // Contains the command the user wishes upon the character
 struct Cmd {
@@ -19,17 +19,16 @@ struct Cmd {
 }
 
 public class CPMPlayer : MonoBehaviour {
-    /*Frame occuring factors*/
+    /* Frame occuring factors */
     public float gravity = 20.0f;
 
-    public float friction = 4.0f;                 //Ground friction
+    public float friction = 4.0f;                 // Ground friction
 
     /* Movement stuff */
     public float maxspeed = 8.0f;                 // Max speed
     public float accelerate = 10.0f;              // Ground accel
     public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
     public float airaccelerate = 100.0f;          // Air accel
-    public bool holdJumpToBhop = true;            // When enabled allows player to just hold jump button to keep on bhopping perfectly. Beware: smells like casual.
 
     public PlayerControllerB player;
     private CharacterController _controller;
@@ -63,6 +62,8 @@ public class CPMPlayer : MonoBehaviour {
         player.fallValue = 0.0f;
         // Disables fall damage
         player.fallValueUncapped = 0.0f;
+        // Disable stamina
+        player.sprintMeter = 1.0f;
 
         /* Movement, here's the important part */
         QueueJump( );
@@ -82,10 +83,10 @@ public class CPMPlayer : MonoBehaviour {
     }
 
     /*******************************************************************************************************\
-   |* MOVEMENT
-   \*******************************************************************************************************/
+    |* MOVEMENT
+    \*******************************************************************************************************/
 
-    /**
+    /*
      * Sets the movement direction based on player input
      */
     private void SetMovementDir( ) {
@@ -93,19 +94,19 @@ public class CPMPlayer : MonoBehaviour {
         _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x;
     }
 
-    /**
-     * Queues the next jump just like in Q3
+    /*
+     * Checks for jump input
      */
     private void QueueJump( ) {
-        if ( holdJumpToBhop ) {
+        if ( Plugin.cfg.autobhop )
             wishJump = player.playerActions.Movement.Jump.ReadValue<float>( ) > 0.0f;
-            return;
-        }
+        else
+            wishJump = player.playerActions.Movement.SwitchItem.ReadValue<float>( ) != 0.0f;
     }
 
-    /**
+    /*
      * Execs when the player is in the air
-    */
+     */
     private void AirMove( ) {
         Vector3 wishvel;
         Vector3 wishdir;
@@ -132,7 +133,7 @@ public class CPMPlayer : MonoBehaviour {
         playerVelocity.y -= gravity * Time.deltaTime;
     }
 
-    /**
+    /*
      * Called every frame when the engine detects that the player is on the ground
      */
     private void WalkMove( ) {
@@ -163,10 +164,18 @@ public class CPMPlayer : MonoBehaviour {
         if ( wishJump ) {
             playerVelocity.y = 8.0f;
             wishJump = false;
+
+            // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
+            /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
+             * Plugin.patchJump = false; // Disable jump patch
+             * MethodInfo method = player.GetType( ).GetMethod( "Jump_performed", BindingFlags.NonPublic | BindingFlags.Instance );
+             * method.Invoke( player, new object[] { new InputAction.CallbackContext( ) } ); // Pass dummy callback context
+             * Plugin.patchJump = true; // Reenable jump patch
+             */
         }
     }
 
-    /**
+    /*
      * Applies friction to the player, called in both the air and on the ground
      */
     private void Friction( ) {
