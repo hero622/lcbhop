@@ -13,6 +13,9 @@ Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard
 
 ## Changelog
 
+### 1.1.1
+- Removed ItemQuickSwitch as a concrete dependency.
+
 ### 1.1.0
 - Toggle option for auto bhop mode.
 - Toggleable Speedometer HUD.
