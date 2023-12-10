@@ -6,282 +6,282 @@ using System.Reflection;
 
 using GameNetcodeStuff;
 
-using lcbhop;
-
 using TMPro;
 
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Contains the command the user wishes upon the character
-struct Cmd {
-    public float forwardMove;
-    public float rightMove;
-    public float upMove;
-}
-
-public class CPMPlayer : MonoBehaviour {
-    /* Frame occuring factors */
-    public float gravity = 20.0f;
-
-    public float friction = 4.0f;                 // Ground friction
-
-    /* Movement stuff */
-    public float maxspeed = 8.0f;                 // Max speed
-    public float accelerate = 10.0f;              // Ground accel
-    public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
-    public float airaccelerate = 100.0f;          // Air accel
-
-    public PlayerControllerB player;
-    private CharacterController _controller;
-
-    private Vector3 playerVelocity = Vector3.zero;
-
-    public bool wishJump = false;
-
-    // Player commands, stores wish commands that the player asks for (Forward, back, jump, etc)
-    private Cmd _cmd;
-
-    private GameObject compass;
-    private TextMeshProUGUI speedo;
-
-    private void Start( ) {
-        _controller = player.thisController;
+namespace lcbhop {
+    // Contains the command the user wishes upon the character
+    struct Cmd {
+        public float forwardMove;
+        public float rightMove;
+        public float upMove;
     }
 
-    private void Update( ) {
-        if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
-            return;
+    public class CPMPlayer : MonoBehaviour {
+        /* Frame occuring factors */
+        public float gravity = 20.0f;
+
+        public float friction = 4.0f;                 // Ground friction
+
+        /* Movement stuff */
+        public float maxspeed = 8.0f;                 // Max speed
+        public float accelerate = 10.0f;              // Ground accel
+        public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
+        public float airaccelerate = 100.0f;          // Air accel
+
+        public PlayerControllerB player;
+        private CharacterController _controller;
+
+        private Vector3 playerVelocity = Vector3.zero;
+
+        public bool wishJump = false;
+
+        // Player commands, stores wish commands that the player asks for (Forward, back, jump, etc)
+        private Cmd _cmd;
+
+        private GameObject compass;
+        private TextMeshProUGUI speedo;
+
+        private void Start( ) {
+            _controller = player.thisController;
         }
-        if ( player.quickMenuManager.isMenuOpen || player.inSpecialInteractAnimation || player.isTypingChat ) {
-            return;
-        }
 
-        // Don't patch movement on ladders
-        if ( player.isClimbingLadder ) {
-            Plugin.patchMove = false;
-            return;
-        }
-
-        // Allow crouching while mid air
-        player.fallValue = 0.0f;
-        // Disables fall damage
-        player.fallValueUncapped = 0.0f;
-        // Disable stamina
-        player.sprintMeter = 1.0f;
-
-        /* Movement, here's the important part */
-        QueueJump( );
-
-        if ( _controller.isGrounded )
-            Friction( );
-
-        if ( _controller.isGrounded )
-            WalkMove( );
-        else if ( !_controller.isGrounded )
-            AirMove( );
-
-        // Move the controller
-        Plugin.patchMove = false; // Disable the Move Patch
-        _controller.Move( playerVelocity * Time.deltaTime );
-        Plugin.patchMove = true; // Reenable the Move Patch
-
-        wishJump = false;
-
-        /* Speedometer */
-        if ( Plugin.cfg.speedometer ) {
-            if ( !compass ) {
-                compass = GameObject.Find( "/Systems/UI/Canvas/IngamePlayerHUD/TopLeftCorner/Compass" );
-                speedo = compass.GetComponentInChildren<TextMeshProUGUI>( );
+        private void Update( ) {
+            if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
+                return;
             }
-            if ( !compass )
+            if ( player.quickMenuManager.isMenuOpen || player.inSpecialInteractAnimation || player.isTypingChat ) {
+                return;
+            }
+
+            // Don't patch movement on ladders
+            if ( player.isClimbingLadder ) {
+                Plugin.patchMove = false;
+                return;
+            }
+
+            // Allow crouching while mid air
+            player.fallValue = 0.0f;
+            // Disables fall damage
+            player.fallValueUncapped = 0.0f;
+            // Disable stamina
+            player.sprintMeter = 1.0f;
+
+            /* Movement, here's the important part */
+            QueueJump( );
+
+            if ( _controller.isGrounded )
+                Friction( );
+
+            if ( _controller.isGrounded )
+                WalkMove( );
+            else if ( !_controller.isGrounded )
+                AirMove( );
+
+            // Move the controller
+            Plugin.patchMove = false; // Disable the Move Patch
+            _controller.Move( playerVelocity * Time.deltaTime );
+            Plugin.patchMove = true; // Reenable the Move Patch
+
+            wishJump = false;
+
+            /* Speedometer */
+            if ( Plugin.cfg.speedometer ) {
+                if ( !compass ) {
+                    compass = GameObject.Find( "/Systems/UI/Canvas/IngamePlayerHUD/TopLeftCorner/Compass" );
+                    speedo = compass.GetComponentInChildren<TextMeshProUGUI>( );
+                }
+                if ( !compass )
+                    return;
+
+                compass.SetActive( true );
+
+                // Only X, Y speed
+                Vector3 vel = playerVelocity;
+                vel.y = 0.0f;
+
+                speedo.text = $"{( int ) vel.magnitude} u";
+                speedo.rectTransform.sizeDelta = speedo.GetPreferredValues( );
+            } else {
+                if ( compass )
+                    compass.SetActive( false );
+            }
+        }
+
+        /*******************************************************************************************************\
+        |* MOVEMENT
+        \*******************************************************************************************************/
+
+        /*
+         * Sets the movement direction based on player input
+         */
+        private void SetMovementDir( ) {
+            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y;
+            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x;
+        }
+
+        /*
+         * Checks for jump input
+         */
+        private void QueueJump( ) {
+            if ( Plugin.cfg.autobhop )
+                wishJump = player.playerActions.Movement.Jump.ReadValue<float>( ) > 0.0f;
+            else {
+                if ( !wishJump )
+                    wishJump = player.playerActions.Movement.SwitchItem.ReadValue<float>( ) != 0.0f;
+            }
+        }
+
+        /*
+         * Execs when the player is in the air
+         */
+        private void AirMove( ) {
+            Vector3 wishvel;
+            Vector3 wishdir;
+            float wishspeed;
+
+            SetMovementDir( );
+
+            wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
+            wishvel = transform.TransformDirection( wishvel );
+
+            wishdir = wishvel;
+
+            wishspeed = wishdir.magnitude;
+            wishdir.Normalize( );
+
+            if ( wishspeed > maxspeed ) {
+                wishvel *= maxspeed / wishspeed;
+                wishspeed = maxspeed;
+            }
+
+            AirAccelerate( wishdir, wishspeed, airaccelerate );
+
+            // Apply gravity
+            playerVelocity.y -= gravity * Time.deltaTime;
+        }
+
+        /*
+         * Called every frame when the engine detects that the player is on the ground
+         */
+        private void WalkMove( ) {
+            Vector3 wishvel;
+            Vector3 wishdir;
+            float wishspeed;
+
+            SetMovementDir( );
+
+            wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
+            wishvel = transform.TransformDirection( wishvel );
+
+            wishdir = wishvel;
+
+            wishspeed = wishdir.magnitude * maxspeed;
+            wishdir.Normalize( );
+
+            if ( wishspeed > maxspeed ) {
+                wishvel *= maxspeed / wishspeed;
+                wishspeed = maxspeed;
+            }
+
+            Accelerate( wishdir, wishspeed, accelerate );
+
+            // Reset the gravity velocity
+            playerVelocity.y = -gravity * Time.deltaTime;
+
+            if ( wishJump ) {
+                playerVelocity.y = 8.0f;
+
+                // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
+                /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
+                 * Plugin.patchJump = false; // Disable jump patch
+                 * MethodInfo method = player.GetType( ).GetMethod( "Jump_performed", BindingFlags.NonPublic | BindingFlags.Instance );
+                 * method.Invoke( player, new object[] { new InputAction.CallbackContext( ) } ); // Pass dummy callback context
+                 * Plugin.patchJump = true; // Reenable jump patch
+                 */
+            }
+        }
+
+        /*
+         * Applies friction to the player, called in both the air and on the ground
+         */
+        private void Friction( ) {
+            Vector3 vec = playerVelocity;
+            float speed;
+            float newspeed;
+            float control;
+            float drop;
+
+            vec.y = 0.0f;
+            speed = vec.magnitude;
+
+            if ( speed < 0.1f )
                 return;
 
-            compass.SetActive( true );
+            drop = 0.0f;
 
-            // Only X, Y speed
-            Vector3 vel = playerVelocity;
-            vel.y = 0.0f;
+            /* Only if the player is on the ground then apply friction */
+            if ( _controller.isGrounded ) {
+                control = ( speed < stopspeed ) ? stopspeed : speed;
+                drop += control * friction * Time.deltaTime;
+            }
 
-            speedo.text = $"{( int ) vel.magnitude} u";
-            speedo.rectTransform.sizeDelta = speedo.GetPreferredValues( );
-        } else {
-            if ( compass )
-                compass.SetActive( false );
-        }
-    }
+            newspeed = speed - drop;
+            if ( newspeed < 0 )
+                newspeed = 0;
 
-    /*******************************************************************************************************\
-    |* MOVEMENT
-    \*******************************************************************************************************/
+            newspeed /= speed;
 
-    /*
-     * Sets the movement direction based on player input
-     */
-    private void SetMovementDir( ) {
-        _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y;
-        _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x;
-    }
-
-    /*
-     * Checks for jump input
-     */
-    private void QueueJump( ) {
-        if ( Plugin.cfg.autobhop )
-            wishJump = player.playerActions.Movement.Jump.ReadValue<float>( ) > 0.0f;
-        else {
-            if ( !wishJump )
-                wishJump = player.playerActions.Movement.SwitchItem.ReadValue<float>( ) != 0.0f;
-        }
-    }
-
-    /*
-     * Execs when the player is in the air
-     */
-    private void AirMove( ) {
-        Vector3 wishvel;
-        Vector3 wishdir;
-        float wishspeed;
-
-        SetMovementDir( );
-
-        wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
-        wishvel = transform.TransformDirection( wishvel );
-
-        wishdir = wishvel;
-
-        wishspeed = wishdir.magnitude;
-        wishdir.Normalize( );
-
-        if ( wishspeed > maxspeed ) {
-            wishvel *= maxspeed / wishspeed;
-            wishspeed = maxspeed;
+            playerVelocity.x *= newspeed;
+            playerVelocity.z *= newspeed;
         }
 
-        AirAccelerate( wishdir, wishspeed, airaccelerate );
+        private void Accelerate( Vector3 wishdir, float wishspeed, float accel ) {
+            float addspeed;
+            float accelspeed;
+            float currentspeed;
 
-        // Apply gravity
-        playerVelocity.y -= gravity * Time.deltaTime;
-    }
+            currentspeed = Vector3.Dot( playerVelocity, wishdir );
 
-    /*
-     * Called every frame when the engine detects that the player is on the ground
-     */
-    private void WalkMove( ) {
-        Vector3 wishvel;
-        Vector3 wishdir;
-        float wishspeed;
+            addspeed = wishspeed - currentspeed;
 
-        SetMovementDir( );
+            if ( addspeed <= 0 )
+                return;
 
-        wishvel = new Vector3( _cmd.rightMove, 0, _cmd.forwardMove );
-        wishvel = transform.TransformDirection( wishvel );
+            accelspeed = accel * Time.deltaTime * wishspeed;
 
-        wishdir = wishvel;
+            if ( accelspeed > addspeed )
+                accelspeed = addspeed;
 
-        wishspeed = wishdir.magnitude * maxspeed;
-        wishdir.Normalize( );
-
-        if ( wishspeed > maxspeed ) {
-            wishvel *= maxspeed / wishspeed;
-            wishspeed = maxspeed;
+            playerVelocity.x += accelspeed * wishdir.x;
+            playerVelocity.z += accelspeed * wishdir.z;
         }
 
-        Accelerate( wishdir, wishspeed, accelerate );
+        private void AirAccelerate( Vector3 wishdir, float wishspeed, float accel ) {
+            float addspeed;
+            float accelspeed;
+            float currentspeed;
+            float wishspd = wishspeed;
 
-        // Reset the gravity velocity
-        playerVelocity.y = -gravity * Time.deltaTime;
+            if ( wishspd > 30 )
+                wishspd = 30;
 
-        if ( wishJump ) {
-            playerVelocity.y = 8.0f;
+            currentspeed = Vector3.Dot( playerVelocity, wishdir );
 
-            // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
-            /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
-             * Plugin.patchJump = false; // Disable jump patch
-             * MethodInfo method = player.GetType( ).GetMethod( "Jump_performed", BindingFlags.NonPublic | BindingFlags.Instance );
-             * method.Invoke( player, new object[] { new InputAction.CallbackContext( ) } ); // Pass dummy callback context
-             * Plugin.patchJump = true; // Reenable jump patch
-             */
+            addspeed = wishspd - currentspeed;
+
+            if ( addspeed <= 0 )
+                return;
+
+            accelspeed = accel * wishspeed * Time.deltaTime;
+
+            if ( accelspeed > addspeed )
+                accelspeed = addspeed;
+
+            playerVelocity.x += accelspeed * wishdir.x;
+            playerVelocity.z += accelspeed * wishdir.z;
         }
-    }
-
-    /*
-     * Applies friction to the player, called in both the air and on the ground
-     */
-    private void Friction( ) {
-        Vector3 vec = playerVelocity;
-        float speed;
-        float newspeed;
-        float control;
-        float drop;
-
-        vec.y = 0.0f;
-        speed = vec.magnitude;
-
-        if ( speed < 0.1f )
-            return;
-
-        drop = 0.0f;
-
-        /* Only if the player is on the ground then apply friction */
-        if ( _controller.isGrounded ) {
-            control = ( speed < stopspeed ) ? stopspeed : speed;
-            drop += control * friction * Time.deltaTime;
-        }
-
-        newspeed = speed - drop;
-        if ( newspeed < 0 )
-            newspeed = 0;
-
-        newspeed /= speed;
-
-        playerVelocity.x *= newspeed;
-        playerVelocity.z *= newspeed;
-    }
-
-    private void Accelerate( Vector3 wishdir, float wishspeed, float accel ) {
-        float addspeed;
-        float accelspeed;
-        float currentspeed;
-
-        currentspeed = Vector3.Dot( playerVelocity, wishdir );
-
-        addspeed = wishspeed - currentspeed;
-
-        if ( addspeed <= 0 )
-            return;
-
-        accelspeed = accel * Time.deltaTime * wishspeed;
-
-        if ( accelspeed > addspeed )
-            accelspeed = addspeed;
-
-        playerVelocity.x += accelspeed * wishdir.x;
-        playerVelocity.z += accelspeed * wishdir.z;
-    }
-
-    private void AirAccelerate( Vector3 wishdir, float wishspeed, float accel ) {
-        float addspeed;
-        float accelspeed;
-        float currentspeed;
-        float wishspd = wishspeed;
-
-        if ( wishspd > 30 )
-            wishspd = 30;
-
-        currentspeed = Vector3.Dot( playerVelocity, wishdir );
-
-        addspeed = wishspd - currentspeed;
-
-        if ( addspeed <= 0 )
-            return;
-
-        accelspeed = accel * wishspeed * Time.deltaTime;
-
-        if ( accelspeed > addspeed )
-            accelspeed = addspeed;
-
-        playerVelocity.x += accelspeed * wishdir.x;
-        playerVelocity.z += accelspeed * wishdir.z;
     }
 }
