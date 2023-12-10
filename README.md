@@ -3,6 +3,10 @@
 
 Bhop mod featuring *real* **Bhop** movement in Lethal Company.
 
+Chat commands:
+- /autobhop - Toggles auto bhop mode.
+- /speedo - Toggles Speedometer HUD.
+
 Requires [ItemQuickSwitch](https://thunderstore.io/c/lethal-company/p/vasanex/ItemQuickSwitch/) if not using auto bhop mode!
 
 Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard/quake3-movement-unity3d/tree/master), modified to match [halflife](https://github.com/ValveSoftware/halflife/blob/master/pm_shared/pm_shared.c)
