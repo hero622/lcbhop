@@ -8,6 +8,8 @@ using GameNetcodeStuff;
 
 using lcbhop;
 
+using TMPro;
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -39,6 +41,9 @@ public class CPMPlayer : MonoBehaviour {
 
     // Player commands, stores wish commands that the player asks for (Forward, back, jump, etc)
     private Cmd _cmd;
+
+    private GameObject compass;
+    private TextMeshProUGUI speedo;
 
     private void Start( ) {
         _controller = player.thisController;
@@ -80,6 +85,28 @@ public class CPMPlayer : MonoBehaviour {
         Plugin.patchMove = false; // Disable the Move Patch
         _controller.Move( playerVelocity * Time.deltaTime );
         Plugin.patchMove = true; // Reenable the Move Patch
+
+        /* Speedometer */
+        if ( Plugin.cfg.speedometer ) {
+            if ( !compass ) {
+                compass = GameObject.Find( "/Systems/UI/Canvas/IngamePlayerHUD/TopLeftCorner/Compass" );
+                speedo = compass.GetComponentInChildren<TextMeshProUGUI>( );
+            }
+            if ( !compass )
+                return;
+
+            compass.SetActive( true );
+
+            // Only X, Y speed
+            Vector3 vel = playerVelocity;
+            vel.y = 0.0f;
+
+            speedo.text = $"{( int ) vel.magnitude} u";
+            speedo.rectTransform.sizeDelta = speedo.GetPreferredValues( );
+        } else {
+            if ( compass )
+                compass.SetActive( false );
+        }
     }
 
     /*******************************************************************************************************\
