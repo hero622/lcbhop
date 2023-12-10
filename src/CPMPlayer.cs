@@ -37,7 +37,7 @@ public class CPMPlayer : MonoBehaviour {
 
     private Vector3 playerVelocity = Vector3.zero;
 
-    private bool wishJump = false;
+    public bool wishJump = false;
 
     // Player commands, stores wish commands that the player asks for (Forward, back, jump, etc)
     private Cmd _cmd;
@@ -86,6 +86,8 @@ public class CPMPlayer : MonoBehaviour {
         _controller.Move( playerVelocity * Time.deltaTime );
         Plugin.patchMove = true; // Reenable the Move Patch
 
+        wishJump = false;
+
         /* Speedometer */
         if ( Plugin.cfg.speedometer ) {
             if ( !compass ) {
@@ -127,8 +129,10 @@ public class CPMPlayer : MonoBehaviour {
     private void QueueJump( ) {
         if ( Plugin.cfg.autobhop )
             wishJump = player.playerActions.Movement.Jump.ReadValue<float>( ) > 0.0f;
-        else
-            wishJump = player.playerActions.Movement.SwitchItem.ReadValue<float>( ) != 0.0f;
+        else {
+            if ( !wishJump )
+                wishJump = player.playerActions.Movement.SwitchItem.ReadValue<float>( ) != 0.0f;
+        }
     }
 
     /*
@@ -190,7 +194,6 @@ public class CPMPlayer : MonoBehaviour {
 
         if ( wishJump ) {
             playerVelocity.y = 8.0f;
-            wishJump = false;
 
             // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
             /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!

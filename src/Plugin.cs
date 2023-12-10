@@ -12,7 +12,8 @@ namespace lcbhop {
         void Update( ) {
             foreach ( PlayerControllerB playerControllerB in UnityEngine.Object.FindObjectsOfType<PlayerControllerB>( ) ) {
                 if ( playerControllerB != null && playerControllerB.gameObject.GetComponentInChildren<CPMPlayer>( ) == null && playerControllerB.IsOwner && playerControllerB.isPlayerControlled ) {
-                    playerControllerB.gameObject.AddComponent<CPMPlayer>( ).player = playerControllerB;
+                    Plugin.player = playerControllerB.gameObject.AddComponent<CPMPlayer>( );
+                    Plugin.player.player = playerControllerB;
                 }
             }
         }
@@ -27,6 +28,8 @@ namespace lcbhop {
 
         public static bool patchMove = true;
         public static bool patchJump = true;
+
+        public static CPMPlayer player;
 
         void Awake( ) {
             cfg = new Config( Config );

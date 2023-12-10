@@ -43,6 +43,8 @@ namespace lcbhop {
     class Jump_performed_Patch {
         [HarmonyPrefix]
         internal static bool Prefix( ref InputAction.CallbackContext context ) {
+            Plugin.player.wishJump = true;
+
             // Patch jumping animation, we call it on our own
             return !Plugin.patchJump;
         }
