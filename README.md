@@ -13,6 +13,18 @@ Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard
 
 ## Changelog
 
+### 1.2.0
+- Add movement variables to the config:
+  - gravity
+  - friction
+  - maxspeed
+  - movespeed
+  - accelerate
+  - airaccelerate
+  - stopspeed
+- Jump height and gravity should be more accurate now (a little higher).
+- Speedometer shows units similar to **Source**.
+
 ### 1.1.1
 - Removed ItemQuickSwitch as a concrete dependency.
 

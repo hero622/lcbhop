@@ -21,15 +21,16 @@ namespace lcbhop {
 
     public class CPMPlayer : MonoBehaviour {
         /* Frame occuring factors */
-        public float gravity = 20.0f;
+        public float gravity = Plugin.cfg.gravity;              // Gravity
 
-        public float friction = 4.0f;                 // Ground friction
+        public float friction = Plugin.cfg.friction;            // Ground friction
 
         /* Movement stuff */
-        public float maxspeed = 8.0f;                 // Max speed
-        public float accelerate = 10.0f;              // Ground accel
-        public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
-        public float airaccelerate = 100.0f;          // Air accel
+        public float maxspeed = Plugin.cfg.maxspeed;            // Max speed
+        public float movespeed = Plugin.cfg.movespeed;          // Ground speed (like cl_forwardspeed etc.)
+        public float accelerate = Plugin.cfg.accelerate;        // Ground acceleration
+        public float airaccelerate = Plugin.cfg.airaccelerate;  // Air acceleration
+        public float stopspeed = Plugin.cfg.stopspeed;          // Ground deceleration
 
         public PlayerControllerB player;
         private CharacterController _controller;
@@ -99,7 +100,7 @@ namespace lcbhop {
                 compass.SetActive( true );
 
                 // Only X, Y speed
-                Vector3 vel = playerVelocity;
+                Vector3 vel = playerVelocity * 32.0f;
                 vel.y = 0.0f;
 
                 speedo.text = $"{( int ) vel.magnitude} u";
@@ -152,15 +153,15 @@ namespace lcbhop {
             wishspeed = wishdir.magnitude;
             wishdir.Normalize( );
 
-            if ( wishspeed > maxspeed ) {
-                wishvel *= maxspeed / wishspeed;
-                wishspeed = maxspeed;
+            if ( wishspeed > maxspeed / 32.0f ) {
+                wishvel *= maxspeed / 32.0f / wishspeed;
+                wishspeed = maxspeed / 32.0f;
             }
 
             AirAccelerate( wishdir, wishspeed, airaccelerate );
 
             // Apply gravity
-            playerVelocity.y -= gravity * Time.deltaTime;
+            playerVelocity.y -= gravity / 32.0f * Time.deltaTime;
         }
 
         /*
@@ -178,21 +179,21 @@ namespace lcbhop {
 
             wishdir = wishvel;
 
-            wishspeed = wishdir.magnitude * maxspeed;
+            wishspeed = wishdir.magnitude * movespeed / 32.0f; // This is actually not very accurate but i'm not sure how their system works :/
             wishdir.Normalize( );
 
-            if ( wishspeed > maxspeed ) {
-                wishvel *= maxspeed / wishspeed;
-                wishspeed = maxspeed;
+            if ( wishspeed > maxspeed / 32.0f ) {
+                wishvel *= maxspeed / 32.0f / wishspeed;
+                wishspeed = maxspeed / 32.0f;
             }
 
             Accelerate( wishdir, wishspeed, accelerate );
 
             // Reset the gravity velocity
-            playerVelocity.y = -gravity * Time.deltaTime;
+            playerVelocity.y = -gravity / 32.0f * Time.deltaTime;
 
             if ( wishJump ) {
-                playerVelocity.y = 8.0f;
+                playerVelocity.y = Mathf.Sqrt( 2 * 800 * 45.0f ) / 32.0f;
 
                 // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
                 /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
