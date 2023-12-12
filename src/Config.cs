@@ -25,12 +25,12 @@ namespace lcbhop {
             speedometer = config.Bind( "General", "Speedometer", false, "Enables speedometer HUD." ).Value;
 
             gravity = config.Bind( "Move Vars", "Gravity", 600.0f, "Gravity." ).Value;
-            friction = config.Bind( "Move Vars", "Friction", 4.0f, "Ground friction." ).Value;
+            friction = config.Bind( "Move Vars", "Friction", 5.0f, "Ground friction." ).Value;
             maxspeed = config.Bind( "Move Vars", "Max Speed", 320.0f, "Max speed per tick." ).Value;
             movespeed = config.Bind( "Move Vars", "Move Speed", 250.0f, "Ground speed (like cl_forwardspeed etc.)." ).Value;
-            accelerate = config.Bind( "Move Vars", "Accelerate", 10.0f, "Ground acceleration." ).Value;
+            accelerate = config.Bind( "Move Vars", "Accelerate", 6.5f, "Ground acceleration." ).Value;
             airaccelerate = config.Bind( "Move Vars", "Air Accelerate", 100.0f, "Air acceleration." ).Value;
-            stopspeed = config.Bind( "Move Vars", "Stop Speed", 10.0f, "Ground deceleration." ).Value;
+            stopspeed = config.Bind( "Move Vars", "Stop Speed", 80.0f, "Ground deceleration." ).Value;
         }
     }
 }

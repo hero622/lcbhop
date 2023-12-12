@@ -13,6 +13,11 @@ Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard
 
 ## Changelog
 
+### 1.2.1
+- Fixed incorrent maths in the code which resulted in friction and other stuff not being handled correctly.
+- Updated default movevars, make sure to delete your previous config if you want this to update!
+- Hopefully fixed instances of taking damage randomly.
+
 ### 1.2.0
 - Add movement variables to the config:
   - gravity

@@ -50,6 +50,13 @@ namespace lcbhop {
         }
 
         private void Update( ) {
+            // Allow crouching while mid air
+            player.fallValue = 0.0f;
+            // Disables fall damage
+            player.fallValueUncapped = 0.0f;
+            // Disable stamina
+            player.sprintMeter = 1.0f;
+
             if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
                 return;
             }
@@ -62,13 +69,6 @@ namespace lcbhop {
                 Plugin.patchMove = false;
                 return;
             }
-
-            // Allow crouching while mid air
-            player.fallValue = 0.0f;
-            // Disables fall damage
-            player.fallValueUncapped = 0.0f;
-            // Disable stamina
-            player.sprintMeter = 1.0f;
 
             /* Movement, here's the important part */
             QueueJump( );
@@ -83,7 +83,7 @@ namespace lcbhop {
 
             // Move the controller
             Plugin.patchMove = false; // Disable the Move Patch
-            _controller.Move( playerVelocity * Time.deltaTime );
+            _controller.Move( playerVelocity / 32.0f * Time.deltaTime );
             Plugin.patchMove = true; // Reenable the Move Patch
 
             wishJump = false;
@@ -100,7 +100,7 @@ namespace lcbhop {
                 compass.SetActive( true );
 
                 // Only X, Y speed
-                Vector3 vel = playerVelocity * 32.0f;
+                Vector3 vel = playerVelocity;
                 vel.y = 0.0f;
 
                 speedo.text = $"{( int ) vel.magnitude} u";
@@ -119,8 +119,8 @@ namespace lcbhop {
          * Sets the movement direction based on player input
          */
         private void SetMovementDir( ) {
-            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y;
-            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x;
+            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y * movespeed;
+            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x * movespeed;
         }
 
         /*
@@ -153,15 +153,15 @@ namespace lcbhop {
             wishspeed = wishdir.magnitude;
             wishdir.Normalize( );
 
-            if ( wishspeed > maxspeed / 32.0f ) {
-                wishvel *= maxspeed / 32.0f / wishspeed;
-                wishspeed = maxspeed / 32.0f;
+            if ( wishspeed > maxspeed ) {
+                wishvel *= maxspeed / wishspeed;
+                wishspeed = maxspeed;
             }
 
             AirAccelerate( wishdir, wishspeed, airaccelerate );
 
             // Apply gravity
-            playerVelocity.y -= gravity / 32.0f * Time.deltaTime;
+            playerVelocity.y -= gravity * Time.deltaTime;
         }
 
         /*
@@ -179,21 +179,21 @@ namespace lcbhop {
 
             wishdir = wishvel;
 
-            wishspeed = wishdir.magnitude * movespeed / 32.0f; // This is actually not very accurate but i'm not sure how their system works :/
+            wishspeed = wishdir.magnitude;
             wishdir.Normalize( );
 
-            if ( wishspeed > maxspeed / 32.0f ) {
-                wishvel *= maxspeed / 32.0f / wishspeed;
-                wishspeed = maxspeed / 32.0f;
+            if ( wishspeed > maxspeed ) {
+                wishvel *= maxspeed / wishspeed;
+                wishspeed = maxspeed;
             }
 
             Accelerate( wishdir, wishspeed, accelerate );
 
             // Reset the gravity velocity
-            playerVelocity.y = -gravity / 32.0f * Time.deltaTime;
+            playerVelocity.y = -gravity * Time.deltaTime;
 
             if ( wishJump ) {
-                playerVelocity.y = Mathf.Sqrt( 2 * 800 * 45.0f ) / 32.0f;
+                playerVelocity.y = Mathf.Sqrt( 2 * 800 * 45.0f );
 
                 // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
                 /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
