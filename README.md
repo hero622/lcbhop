@@ -1,5 +1,5 @@
 # lcbhop
-[Github page](https://github.com/Zyntex1/lcbhop)
+[Thunderstore page](https://thunderstore.io/c/lethal-company/p/Zyntex/Bhop_Mod) | [Github page](https://github.com/Zyntex1/lcbhop)
 
 Bhop mod featuring *real* **Bhop** movement in Lethal Company.
 
