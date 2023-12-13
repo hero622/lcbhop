@@ -21,15 +21,16 @@ namespace lcbhop {
 
     public class CPMPlayer : MonoBehaviour {
         /* Frame occuring factors */
-        public float gravity = 20.0f;
+        public float gravity = Plugin.cfg.gravity;              // Gravity
 
-        public float friction = 4.0f;                 // Ground friction
+        public float friction = Plugin.cfg.friction;            // Ground friction
 
         /* Movement stuff */
-        public float maxspeed = Plugin.cfg.maxspeed;  // Max speed
-        public float accelerate = 10.0f;              // Ground accel
-        public float stopspeed = 10.0f;               // Deacceleration that occurs when running on the ground
-        public float airaccelerate = 100.0f;          // Air accel
+        public float maxspeed = Plugin.cfg.maxspeed;            // Max speed
+        public float movespeed = Plugin.cfg.movespeed;          // Ground speed (like cl_forwardspeed etc.)
+        public float accelerate = Plugin.cfg.accelerate;        // Ground acceleration
+        public float airaccelerate = Plugin.cfg.airaccelerate;  // Air acceleration
+        public float stopspeed = Plugin.cfg.stopspeed;          // Ground deceleration
 
         public PlayerControllerB player;
         private CharacterController _controller;
@@ -49,6 +50,13 @@ namespace lcbhop {
         }
 
         private void Update( ) {
+            // Allow crouching while mid air
+            player.fallValue = 0.0f;
+            // Disables fall damage
+            player.fallValueUncapped = 0.0f;
+            // Disable stamina
+            player.sprintMeter = 1.0f;
+
             if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
                 return;
             }
@@ -60,19 +68,6 @@ namespace lcbhop {
             if ( player.isClimbingLadder ) {
                 Plugin.patchMove = false;
                 return;
-            }
-
-            // Allow crouching while mid air
-            player.fallValue = 0.0f;
-
-            // Disables fall damage
-            if ( Plugin.cfg.disablefalldamage ) {
-                player.fallValueUncapped = 0.0f;
-            }
-
-            // Enable infinite stamina
-            if ( Plugin.cfg.infinitestamina ) {
-                player.sprintMeter = 1.0f;
             }
 
             /* Movement, here's the important part */
@@ -88,7 +83,7 @@ namespace lcbhop {
 
             // Move the controller
             Plugin.patchMove = false; // Disable the Move Patch
-            _controller.Move( playerVelocity * Time.deltaTime );
+            _controller.Move( playerVelocity / 32.0f * Time.deltaTime );
             Plugin.patchMove = true; // Reenable the Move Patch
 
             wishJump = false;
@@ -124,8 +119,8 @@ namespace lcbhop {
          * Sets the movement direction based on player input
          */
         private void SetMovementDir( ) {
-            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y;
-            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x;
+            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y * movespeed;
+            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x * movespeed;
         }
 
         /*
@@ -184,7 +179,7 @@ namespace lcbhop {
 
             wishdir = wishvel;
 
-            wishspeed = wishdir.magnitude * maxspeed;
+            wishspeed = wishdir.magnitude;
             wishdir.Normalize( );
 
             if ( wishspeed > maxspeed ) {
@@ -198,7 +193,7 @@ namespace lcbhop {
             playerVelocity.y = -gravity * Time.deltaTime;
 
             if ( wishJump ) {
-                playerVelocity.y = Plugin.cfg.jumpheight;
+                playerVelocity.y = Mathf.Sqrt( 2 * 800 * 45.0f );
 
                 // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
                 /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!

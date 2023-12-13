@@ -1,5 +1,5 @@
 # lcbhop
-[Github page](https://github.com/Zyntex1/lcbhop)
+[Thunderstore page](https://thunderstore.io/c/lethal-company/p/Zyntex/Bhop_Mod) | [Github page](https://github.com/Zyntex1/lcbhop)
 
 Bhop mod featuring *real* **Bhop** movement in Lethal Company.
 
@@ -12,6 +12,23 @@ Requires [ItemQuickSwitch](https://thunderstore.io/c/lethal-company/p/vasanex/It
 Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard/quake3-movement-unity3d/tree/master), modified to match [halflife](https://github.com/ValveSoftware/halflife/blob/master/pm_shared/pm_shared.c)
 
 ## Changelog
+
+### 1.2.1
+- Fixed incorrent maths in the code which resulted in friction and other stuff not being handled correctly.
+- Updated default movevars, make sure to delete your previous config if you want this to update!
+- Hopefully fixed instances of taking damage randomly.
+
+### 1.2.0
+- Add movement variables to the config:
+  - gravity
+  - friction
+  - maxspeed
+  - movespeed
+  - accelerate
+  - airaccelerate
+  - stopspeed
+- Jump height and gravity should be more accurate now (a little higher).
+- Speedometer shows units similar to **Source**.
 
 ### 1.1.1
 - Removed ItemQuickSwitch as a concrete dependency.
