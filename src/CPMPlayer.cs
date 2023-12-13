@@ -53,9 +53,13 @@ namespace lcbhop {
             // Allow crouching while mid air
             player.fallValue = 0.0f;
             // Disables fall damage
-            player.fallValueUncapped = 0.0f;
+            if ( Plugin.cfg.disablefalldamage ) {
+                player.fallValueUncapped = 0.0f;
+            }
             // Disable stamina
-            player.sprintMeter = 1.0f;
+            if ( Plugin.cfg.infinitestamina || !Plugin.cfg.sprintingenabled ) {
+                player.sprintMeter = 1.0f;
+            }
 
             if ( ( !player.IsOwner || !player.isPlayerControlled || ( player.IsServer && !player.isHostPlayerObject ) ) && !player.isTestingPlayer ) {
                 return;
@@ -119,8 +123,14 @@ namespace lcbhop {
          * Sets the movement direction based on player input
          */
         private void SetMovementDir( ) {
-            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y * movespeed;
-            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x * movespeed;
+            float sprintspeed;
+            if ( Plugin.cfg.sprintingenabled && player.isSprinting )
+                sprintspeed = Plugin.cfg.sprintspeed;
+            else
+                sprintspeed = 1.0f;
+
+            _cmd.forwardMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).y * movespeed * sprintspeed;
+            _cmd.rightMove = player.playerActions.Movement.Move.ReadValue<Vector2>( ).x * movespeed * sprintspeed;
         }
 
         /*
@@ -193,7 +203,7 @@ namespace lcbhop {
             playerVelocity.y = -gravity * Time.deltaTime;
 
             if ( wishJump ) {
-                playerVelocity.y = Mathf.Sqrt( 2 * 800 * 45.0f );
+                playerVelocity.y = Mathf.Sqrt( 2 * 800 * Plugin.cfg.jumpheight );
 
                 // Animate player jumping, this is a bit tricky since its a private method (there's probably a better way to do this)
                 /* XXX: This messes with the animator and makes you not be able to crouch, coulnt figure it out yet!
@@ -243,16 +253,11 @@ namespace lcbhop {
             float addspeed;
             float accelspeed;
             float currentspeed;
-            float sprintspeed;
 
             currentspeed = Vector3.Dot( playerVelocity, wishdir );
 
-            if ( player.isSprinting )
-                sprintspeed = Plugin.cfg.sprintspeed;
-            else
-                sprintspeed = 1.0f;
 
-            addspeed = wishspeed - currentspeed * sprintspeed;
+            addspeed = wishspeed - currentspeed;
 
             if ( addspeed <= 0 )
                 return;
@@ -270,7 +275,6 @@ namespace lcbhop {
             float addspeed;
             float accelspeed;
             float currentspeed;
-            float sprintspeed;
             float wishspd = wishspeed;
 
             if ( wishspd > 30 )
@@ -278,16 +282,7 @@ namespace lcbhop {
 
             currentspeed = Vector3.Dot( playerVelocity, wishdir );
 
-            if ( player.isSprinting ) {
-                sprintspeed = Plugin.cfg.sprintspeed;
-            } else {
-                sprintspeed = 0.0f;
-            }
-
-            if ( sprintspeed > 0 ) 
-                addspeed = wishspd - ( currentspeed + sprintspeed ) * 0.3f;
-            else
-                addspeed = wishspd - currentspeed;
+            addspeed = wishspd - currentspeed;
 
             if ( addspeed <= 0 )
                 return;
