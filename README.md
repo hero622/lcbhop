@@ -13,6 +13,12 @@ Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard
 
 ## Changelog
 
+### 1.3.0
+- **DELETE YOUR PREVIOUS CONFIG IF YOU WANT THESE TO UPDATE!**
+- Adjusted default movevars (based on **CS 1.6**), this should make bhopping more fair and not completely game breaking.
+- Added in bhop speed cap (this can be disabled in the config).
+- Fixed speed loss on every hop even when using autobhop.
+
 ### 1.2.1
 - Fixed incorrent maths in the code which resulted in friction and other stuff not being handled correctly.
 - Updated default movevars, make sure to delete your previous config if you want this to update!
