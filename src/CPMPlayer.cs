@@ -290,6 +290,7 @@ namespace lcbhop {
         }
 
         private void PreventMegaBunnyJumping( ) {
+            Vector3 vec = velocity;
             float spd;
             float fraction;
             float maxscaledspeed;
@@ -299,14 +300,16 @@ namespace lcbhop {
             if ( maxscaledspeed <= 0.0f )
                 return;
 
-            spd = velocity.magnitude;
+            vec.y = 0.0f;
+            spd = vec.magnitude;
 
             if ( spd <= maxscaledspeed )
                 return;
 
             fraction = ( maxscaledspeed / spd ) * 0.65f;
 
-            velocity *= fraction;
+            velocity.x *= fraction;
+            velocity.z *= fraction;
         }
     }
 }

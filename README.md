@@ -13,6 +13,9 @@ Movement code based on [quake3-movement-unity3d](https://github.com/WiggleWizard
 
 ## Changelog
 
+### 1.3.1
+- Fix bhop speed cap limiting vertical velocity.
+
 ### 1.3.0
 - **DELETE YOUR PREVIOUS CONFIG IF YOU WANT THESE TO UPDATE!**
 - Adjusted default movevars (based on **CS 1.6**), this should make bhopping more fair and not completely game breaking.
